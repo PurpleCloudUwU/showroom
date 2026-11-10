@@ -6,6 +6,15 @@
     xmlns:l="using:RetroShowroom"
     NavigationCacheMode="Required">
 
+    <Page.Resources>
+        <Style x:Key="ZoomButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="9,6" />
+            <Setter Property="MinWidth" Value="34" />
+        </Style>
+    </Page.Resources>
+
     <Grid x:Name="Root" AllowDrop="True" Background="Transparent"
           DragOver="Root_DragOver" DragLeave="Root_DragLeave" Drop="Root_Drop"
           Padding="28,4,28,24" ColumnSpacing="24">
@@ -225,10 +234,38 @@
                         <FontIcon Glyph="&#xE722;" FontSize="40" Foreground="#55FFFFFF" />
                         <TextBlock Text="{l:Tr De='Hier erscheint das fertige Bild.', En='The finished image appears here.'}" Foreground="#99FFFFFF" HorizontalAlignment="Center" />
                     </StackPanel>
-                    <Image x:Name="ResultImage" Stretch="Uniform" Margin="10" />
+                    <!-- Zoomen und Verschieben zur Kontrolle (siehe ImageZoom.cs) -->
+                    <ScrollViewer x:Name="ResultScroll" ZoomMode="Enabled" MinZoomFactor="1" MaxZoomFactor="8"
+                                  HorizontalScrollMode="Enabled" VerticalScrollMode="Enabled"
+                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                  IsTabStop="False" CornerRadius="8">
+                        <l:PanSurface x:Name="ResultSurface" Background="Transparent">
+                            <Image x:Name="ResultImage" Stretch="Uniform" />
+                        </l:PanSurface>
+                    </ScrollViewer>
                     <Border x:Name="ImageBadge" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
                             Margin="12" Padding="8,3" CornerRadius="4" Background="#B0000000">
                         <TextBlock x:Name="ImageBadgeText" Foreground="White" FontSize="12" />
+                    </Border>
+                    <Border x:Name="ZoomBar" RequestedTheme="Dark" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Margin="12" Padding="3" CornerRadius="6" Background="#C8000000">
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <Button Style="{StaticResource ZoomButtonStyle}" Click="ZoomOut_Click" AutomationProperties.Name="{l:Tr De='Verkleinern', En='Zoom out'}"
+                                    ToolTipService.ToolTip="{l:Tr De='Verkleinern', En='Zoom out'}">
+                                <FontIcon Glyph="&#xE71F;" FontSize="14" />
+                            </Button>
+                            <TextBlock x:Name="ZoomText" MinWidth="50" TextAlignment="Center" VerticalAlignment="Center" FontSize="12" />
+                            <Button Style="{StaticResource ZoomButtonStyle}" Click="ZoomIn_Click" AutomationProperties.Name="{l:Tr De='Vergrößern', En='Zoom in'}"
+                                    ToolTipService.ToolTip="{l:Tr De='Vergrößern', En='Zoom in'}">
+                                <FontIcon Glyph="&#xE8A3;" FontSize="14" />
+                            </Button>
+                            <Button Style="{StaticResource ZoomButtonStyle}" Click="ZoomFit_Click" AutomationProperties.Name="{l:Tr De='Einpassen', En='Fit'}"
+                                    ToolTipService.ToolTip="{l:Tr De='Einpassen', En='Fit'}">
+                                <FontIcon Glyph="&#xE9A6;" FontSize="14" />
+                            </Button>
+                            <Button Style="{StaticResource ZoomButtonStyle}" Click="ZoomActual_Click" Content="1:1" FontSize="12"
+                                    ToolTipService.ToolTip="{l:Tr De='Originalgröße (1 Bildpunkt = 1 Bildschirmpixel)', En='Actual size (1 image pixel = 1 screen pixel)'}" />
+                        </StackPanel>
                     </Border>
                 </Grid>
             </Border>

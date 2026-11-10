@@ -29,11 +29,14 @@ public sealed partial class RenderPage : Page
     private string? _lastOutput;
     // Ergebnis und Referenzbild fertig dekodiert, damit der Vergleich ohne Wartezeit umschaltet
     private readonly Dictionary<string, (long Stamp, BitmapImage Image)> _images = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ImageZoom _zoom;
 
     public RenderPage()
     {
         InitializeComponent();
         LogExpander.Expanding += (_, _) => RefreshLog();
+        _zoom = new ImageZoom(ResultScroll, ResultSurface, ResultImage, ZoomBar, ZoomText);
+        ToolTipService.SetToolTip(ZoomText, ImageZoom.HelpText);
         _timer = DispatcherQueue.CreateTimer();
         _timer.Interval = TimeSpan.FromMilliseconds(400);
         _timer.Tick += (_, _) => RefreshRenderUi();
@@ -639,11 +642,12 @@ public sealed partial class RenderPage : Page
             long stamp = File.GetLastWriteTimeUtc(path).Ticks;
             if (!_images.TryGetValue(path, out var cached) || cached.Stamp != stamp)
             {
-                cached = (stamp, await Ui.LoadBitmapAsync(path, 2560));
+                // In voller Auflösung laden (bis 8192 Pixel breit), damit man beim Zoomen jedes Detail sieht
+                cached = (stamp, await Ui.LoadBitmapAsync(path, 8192));
                 if (_images.Count >= 2) _images.Clear(); // höchstens Ergebnis und Referenz
                 _images[path] = cached;
             }
-            ResultImage.Source = cached.Image;
+            _zoom.Show(cached.Image);
             EmptyState.Visibility = Visibility.Collapsed;
             ImageBadge.Visibility = badge is null ? Visibility.Collapsed : Visibility.Visible;
             ImageBadgeText.Text = badge ?? "";
@@ -682,11 +686,16 @@ public sealed partial class RenderPage : Page
         }
         else
         {
-            ResultImage.Source = null;
+            _zoom.Show(null);
             ImageBadge.Visibility = Visibility.Collapsed;
             EmptyState.Visibility = Visibility.Visible;
         }
     }
+
+    private void ZoomIn_Click(object sender, RoutedEventArgs e) => _zoom.ZoomIn();
+    private void ZoomOut_Click(object sender, RoutedEventArgs e) => _zoom.ZoomOut();
+    private void ZoomFit_Click(object sender, RoutedEventArgs e) => _zoom.Fit();
+    private void ZoomActual_Click(object sender, RoutedEventArgs e) => _zoom.ActualSize();
 
     private void OpenImage_Click(object sender, RoutedEventArgs e)
     {
