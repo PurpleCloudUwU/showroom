@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="RetroShowroom.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:RetroShowroom"
+    NavigationCacheMode="Enabled">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="1000" Padding="28,4,28,28" Spacing="8">
+            <TextBlock Text="{l:Tr De='Einstellungen', En='Settings'}" Style="{StaticResource TitleTextBlockStyle}" Margin="0,4,0,4" />
+            <InfoBar x:Name="SettingsInfoBar" IsClosable="True" />
+
+            <!-- ================= Allgemein ================= -->
+            <TextBlock Text="{l:Tr De='Allgemein', En='General'}" Style="{StaticResource SectionHeaderStyle}" />
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE774;" FontSize="20" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{l:Tr De='Sprache', En='Language'}" />
+                        <TextBlock Style="{StaticResource HintTextStyle}"
+                                   Text="{l:Tr De='Wird nach einem Neustart der App übernommen.', En='Takes effect after restarting the app.'}" />
+                    </StackPanel>
+                    <ComboBox x:Name="LanguageCombo" Grid.Column="2" MinWidth="160" VerticalAlignment="Center" SelectionChanged="LanguageCombo_SelectionChanged">
+                        <ComboBoxItem Content="Deutsch" Tag="de" />
+                        <ComboBoxItem Content="English" Tag="en" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- ================= Assets ================= -->
+            <TextBlock Text="Assets" Style="{StaticResource SectionHeaderStyle}" />
+            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,0,0,4"
+                       Text="{l:Tr De='Die Dateien werden unverändert in den Datenordner der App kopiert. Die Originale bleiben, wo sie sind.', En='The files are copied unchanged into the app data folder. The originals stay where they are.'}" />
+
+            <!-- Logo -->
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="44" Height="44" CornerRadius="6" Background="#FF101012">
+                        <Grid>
+                            <FontIcon x:Name="LogoPlaceholder" Glyph="&#xEB9F;" FontSize="18" Foreground="#77FFFFFF" />
+                            <Image x:Name="LogoThumb" Stretch="Uniform" Margin="4" />
+                        </Grid>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{l:Tr De='Logo (PNG mit Transparenz)', En='Logo (PNG with transparency)'}" />
+                        <TextBlock x:Name="LogoText" Style="{StaticResource HintTextStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Content="{l:Tr De='Auswählen …', En='Browse …'}" Click="PickLogo_Click" />
+                        <Button x:Name="RemoveLogoButton" Click="RemoveLogo_Click" ToolTipService.ToolTip="{l:Tr De='Entfernen', En='Remove'}">
+                            <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Referenzbild -->
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="44" Height="44" CornerRadius="6" Background="#FF101012">
+                        <Grid>
+                            <FontIcon x:Name="RefPlaceholder" Glyph="&#xE8B9;" FontSize="18" Foreground="#77FFFFFF" />
+                            <Image x:Name="RefThumb" Stretch="UniformToFill" />
+                        </Grid>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{l:Tr De='Referenzbild (optional)', En='Reference image (optional)'}" />
+                        <TextBlock x:Name="RefText" Style="{StaticResource HintTextStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Content="{l:Tr De='Auswählen …', En='Browse …'}" Click="PickReference_Click" />
+                        <Button x:Name="RemoveRefButton" Click="RemoveReference_Click" ToolTipService.ToolTip="{l:Tr De='Entfernen', En='Remove'}">
+                            <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ================= Rendern ================= -->
+            <TextBlock Text="{l:Tr De='Rendern', En='Rendering'}" Style="{StaticResource SectionHeaderStyle}" />
+
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE7F4;" FontSize="20" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{l:Tr De='Grafikkarte verwenden', En='Use graphics card'}" />
+                        <TextBlock Style="{StaticResource HintTextStyle}"
+                                   Text="{l:Tr De='Meist deutlich schneller als die CPU. Scheitert die Grafikkarte (z. B. Grafikspeicher voll), rendert die App automatisch auf der CPU weiter. Aus = nur CPU, wie im Skript.', En='Usually much faster than the CPU. If the graphics card fails (e.g. graphics memory full), the app continues on the CPU automatically. Off = CPU only, as in the script.'}" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="GpuToggle" Grid.Column="2" OnContent="{l:Tr De='An', En='On'}" OffContent="{l:Tr De='Aus', En='Off'}"
+                                  MinWidth="0" Toggled="GpuToggle_Toggled" />
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE756;" FontSize="20" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="Blender" />
+                        <TextBlock x:Name="BlenderText" Style="{StaticResource HintTextStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Content="{l:Tr De='Auswählen …', En='Browse …'}" Click="PickBlender_Click" />
+                        <Button Content="{l:Tr De='Automatisch suchen', En='Detect automatically'}" Click="AutoBlender_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE8B7;" FontSize="20" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{l:Tr De='Ausgabeordner', En='Output folder'}" />
+                        <TextBlock x:Name="OutputText" Style="{StaticResource HintTextStyle}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Content="{l:Tr De='Auswählen …', En='Browse …'}" Click="PickOutput_Click" />
+                        <Button Content="{l:Tr De='Öffnen', En='Open'}" Click="OpenOutput_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ================= Über ================= -->
+            <TextBlock Text="{l:Tr De='Über', En='About'}" Style="{StaticResource SectionHeaderStyle}" />
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Image x:Name="AboutLogo" Width="32" Height="32" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="VersionText" Text="Retro Showroom" />
+                        <TextBlock x:Name="DataText" Style="{StaticResource HintTextStyle}" IsTextSelectionEnabled="True" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="{l:Tr De='Datenordner öffnen', En='Open data folder'}" Click="OpenData_Click" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

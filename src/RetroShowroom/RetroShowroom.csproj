@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>RetroShowroom</RootNamespace>
+    <AssemblyName>RetroShowroom</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <!-- Ohne MSIX-Paket: einfach die .exe starten -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Version>1.0.0</Version>
+    <Product>Retro Showroom</Product>
+    <Company>Retro Studios</Company>
+    <DefaultLanguage>de-DE</DefaultLanguage>
+    <!--
+      Beim Veröffentlichen alles in die .exe packen (statt Hunderter DLLs im Ordner).
+      Native DLLs werden beim ersten Start in einen Cache unter %TEMP%\.net entpackt.
+    -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <!-- Vom Windows App SDK für Einzeldateien verlangt (bettet resources.pri in die .exe ein), trotzdem ohne MSIX-Paket -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <!-- Symbol der .exe (Explorer, Verknüpfungen) -->
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Logo für Titelleiste und „Über“, in die App eingebettet (das Fenstersymbol kommt aus der .exe selbst) -->
+    <EmbeddedResource Include="Assets\AppLogo.png" LogicalName="AppLogo.png" />
+  </ItemGroup>
+
+  <!--
+    Beim Veröffentlichen ohne MSIX kopiert das Windows App SDK die kompilierten Seiten (.xbf) und die
+    Ressourcendatei (RetroShowroom.pri) nicht mit. Ohne sie startet die App nicht (XamlParseException).
+  -->
+  <Target Name="RetroShowroomCopyXamlResources" AfterTargets="Publish" Condition="'$(PublishSingleFile)' != 'true'">
+    <ItemGroup>
+      <_RsXamlResource Include="$(OutDir)**\*.xbf" />
+      <_RsXamlResource Include="$(OutDir)$(TargetName).pri" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_RsXamlResource)"
+          DestinationFiles="@(_RsXamlResource->'$(PublishDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <!--
+    Die App gibt es nur auf Deutsch und Englisch. Das Windows App SDK legt Sprachordner für rund 85 Sprachen
+    an (de-DE, fr-FR, ja-JP …). Beim Veröffentlichen bleiben nur de-DE und en-us übrig.
+  -->
+  <Target Name="RetroShowroomRemoveLanguages" AfterTargets="Publish">
+    <ItemGroup>
+      <_RsPublishDir Include="$([System.IO.Directory]::GetDirectories('$(PublishDir)'))" />
+      <_RsLanguageDir Include="@(_RsPublishDir)"
+                      Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)%(Extension)', '^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})+$')) and '%(Filename)%(Extension)' != 'de-DE' and '%(Filename)%(Extension)' != 'en-US'" />
+    </ItemGroup>
+    <RemoveDir Directories="@(_RsLanguageDir)" />
+    <Message Importance="high" Text="Entfernte Sprachordner: @(_RsLanguageDir->Count())" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RetroShowroom.Core\RetroShowroom.Core.csproj" />
+  </ItemGroup>
+
+</Project>

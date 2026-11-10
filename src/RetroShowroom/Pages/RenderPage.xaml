@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="RetroShowroom.Pages.RenderPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:RetroShowroom"
+    NavigationCacheMode="Required">
+
+    <Grid x:Name="Root" AllowDrop="True" Background="Transparent"
+          DragOver="Root_DragOver" DragLeave="Root_DragLeave" Drop="Root_Drop"
+          Padding="28,4,28,24" ColumnSpacing="24">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="440" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ============ Linke Spalte: Eingaben ============ -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,-14,0" Padding="0,0,14,0">
+            <StackPanel Spacing="12" Padding="0,0,0,16">
+                <StackPanel Spacing="2" Margin="0,4,0,4">
+                    <TextBlock Text="{l:Tr De='Showroom rendern', En='Render showroom'}" Style="{StaticResource TitleTextBlockStyle}" />
+                    <TextBlock Text="{l:Tr De='Glasvitrine · VORNE / SEITE / HINTEN', En='Glass display case · front / side / back'}" Style="{StaticResource HintTextStyle}" />
+                </StackPanel>
+
+                <InfoBar x:Name="SetupInfoBar" IsClosable="False" Severity="Warning">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="SetupInfoButton" Content="{l:Tr De='Zur Einrichtung', En='Go to setup'}" Click="GoToSetup_Click" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+                <InfoBar x:Name="InputInfoBar" IsClosable="True" />
+
+                <ContentControl x:Name="InputHost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsTabStop="False">
+                    <StackPanel Spacing="12">
+
+                        <!-- Kleidungsstück + Textur -->
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="{l:Tr De='Kleidungsstück', En='Clothing item'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+
+                                <Grid x:Name="DropZone" MinHeight="84">
+                                    <Rectangle x:Name="DropRect" RadiusX="6" RadiusY="6" StrokeThickness="1.5" StrokeDashArray="4,3"
+                                               Stroke="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                                               Fill="{ThemeResource SubtleFillColorTransparentBrush}" />
+                                    <Grid Padding="14,12" ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <FontIcon x:Name="PartIcon" Glyph="&#xE8B5;" FontSize="22" VerticalAlignment="Center"
+                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock x:Name="PartNameText" Text="{l:Tr De='.ydd oder .blend hierher ziehen', En='Drop a .ydd or .blend here'}"
+                                                       Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock x:Name="PartInfoText" Text="{l:Tr De='Die passende .ytd kannst du gleich mit reinziehen.', En='You can drop the matching .ytd along with it.'}"
+                                                       Style="{StaticResource HintTextStyle}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Content="{l:Tr De='Auswählen …', En='Browse …'}" Click="PickPart_Click" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Grid>
+
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="72" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="72" Height="72" VerticalAlignment="Top" Margin="0,4,0,0" CornerRadius="6" BorderThickness="1"
+                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                            Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                                        <Grid>
+                                            <FontIcon x:Name="TexPlaceholder" Glyph="&#xEB9F;" FontSize="22"
+                                                      Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            <Image x:Name="TexThumb" Stretch="UniformToFill" />
+                                            <ProgressRing x:Name="TexBusy" IsActive="False" Width="24" Height="24" />
+                                        </Grid>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="8">
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox x:Name="TextureCombo" Header="{l:Tr De='Textur', En='Texture'}" HorizontalAlignment="Stretch"
+                                                      PlaceholderText="{l:Tr De='Keine Textur ausgewählt', En='No texture selected'}" SelectionChanged="TextureCombo_SelectionChanged" />
+                                            <Button Grid.Column="1" VerticalAlignment="Bottom" Click="PickTexture_Click"
+                                                    ToolTipService.ToolTip="{l:Tr De='Andere Textur wählen (.ytd oder .png)', En='Choose another texture (.ytd or .png)'}">
+                                                <FontIcon Glyph="&#xE8E5;" FontSize="16" />
+                                            </Button>
+                                        </Grid>
+                                        <ComboBox x:Name="InnerTextureCombo" Header="{l:Tr De='Textur in der YTD', En='Texture in the YTD'}" HorizontalAlignment="Stretch"
+                                                  Visibility="Collapsed" SelectionChanged="InnerTextureCombo_SelectionChanged" />
+                                        <TextBlock x:Name="TexInfoText" Style="{StaticResource HintTextStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Beschriftung und Typ -->
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="{l:Tr De='Beschriftung und Typ', En='Label and type'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBox x:Name="TitleBox" Header="{l:Tr De='Titel auf dem Sockel', En='Title on the base'}"
+                                         PlaceholderText="{l:Tr De='z. B. YAZURAH 893', En='e.g. YAZURAH 893'}"
+                                         CharacterCasing="Upper" MaxLength="40" TextChanged="TitleBox_TextChanged" />
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <RadioButtons x:Name="GenderRadios" Header="{l:Tr De='Geschlecht', En='Gender'}" SelectedIndex="0" SelectionChanged="Options_Changed">
+                                        <RadioButton Content="{l:Tr De='Männlich', En='Male'}" />
+                                        <RadioButton Content="{l:Tr De='Weiblich', En='Female'}" />
+                                    </RadioButtons>
+                                    <RadioButtons x:Name="KindRadios" Grid.Column="1" Header="{l:Tr De='Typ', En='Type'}" SelectedIndex="0" SelectionChanged="Options_Changed">
+                                        <RadioButton Content="{l:Tr De='Oberteil', En='Top'}" />
+                                        <RadioButton Content="{l:Tr De='Hose', En='Pants'}" />
+                                    </RadioButtons>
+                                </Grid>
+                                <CheckBox x:Name="LongCheck" Content="{l:Tr De='Langes Oberteil (Mantel), höhere Vitrine', En='Long top (coat), taller case'}"
+                                          Checked="Options_Changed" Unchecked="Options_Changed" />
+                                <TextBlock x:Name="DetectHint" Style="{StaticResource HintTextStyle}"
+                                           Text="{l:Tr De='Geschlecht und Typ werden aus dem Dateinamen erkannt.', En='Gender and type are detected from the file name.'}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Qualität -->
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="{l:Tr De='Qualität', En='Quality'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <RadioButtons x:Name="QualityRadios" SelectionChanged="Options_Changed">
+                                    <RadioButton>
+                                        <StackPanel>
+                                            <TextBlock Text="Final" />
+                                            <TextBlock Text="2400 × 1350 · 160 Samples" Style="{StaticResource HintTextStyle}" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton>
+                                        <StackPanel>
+                                            <TextBlock Text="{l:Tr De='Groß', En='Large'}" />
+                                            <TextBlock Text="3840 × 2160 · 256 Samples" Style="{StaticResource HintTextStyle}" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton>
+                                        <StackPanel>
+                                            <TextBlock Text="{l:Tr De='Schnelltest', En='Quick test'}" />
+                                            <TextBlock Text="1200 × 675 · 32 Samples" Style="{StaticResource HintTextStyle}" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                </RadioButtons>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon x:Name="DeviceIcon" Glyph="&#xE7F4;" FontSize="14" VerticalAlignment="Top" Margin="0,1,0,0"
+                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock x:Name="DeviceHint" Grid.Column="1" Style="{StaticResource HintTextStyle}" />
+                                </Grid>
+
+                                <Expander x:Name="AdvancedExpander" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                    <Expander.Header>
+                                        <StackPanel Padding="0,10">
+                                            <TextBlock Text="{l:Tr De='Erweitert', En='Advanced'}" />
+                                            <TextBlock x:Name="AdvancedSummary" Style="{StaticResource HintTextStyle}" />
+                                        </StackPanel>
+                                    </Expander.Header>
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Style="{StaticResource HintTextStyle}"
+                                                   Text="{l:Tr De='Der Standard-Showroom ist abgesegnet. Nur ändern, wenn es ausdrücklich gewünscht ist.', En='The default showroom is approved. Only change this when explicitly requested.'}" />
+                                        <ComboBox x:Name="StyleCombo" Header="{l:Tr De='Stil', En='Style'}" HorizontalAlignment="Stretch" SelectionChanged="Options_Changed">
+                                            <ComboBoxItem Content="{l:Tr De='Weiß (Standard)', En='White (default)'}" Tag="weiss" />
+                                            <ComboBoxItem Content="{l:Tr De='Grau', En='Grey'}" Tag="grau" />
+                                            <ComboBoxItem Content="{l:Tr De='Rot', En='Red'}" Tag="rot" />
+                                            <ComboBoxItem Content="{l:Tr De='Rot, dunkel', En='Red, dark'}" Tag="rot_dunkel" />
+                                        </ComboBox>
+                                        <ToggleSwitch x:Name="SpotsToggle" Header="{l:Tr De='Spot-Strahler über den Vitrinen', En='Spotlights above the cases'}"
+                                                      OnContent="{l:Tr De='An', En='On'}" OffContent="{l:Tr De='Aus', En='Off'}" Toggled="Options_Changed" />
+                                        <NumberBox x:Name="SpotWattBox" Header="{l:Tr De='Spot-Leistung (Watt)', En='Spotlight power (watts)'}" Minimum="10" Maximum="2000"
+                                                   SmallChange="10" LargeChange="50" SpinButtonPlacementMode="Inline"
+                                                   ValueChanged="SpotWattBox_ValueChanged" />
+                                        <ToggleSwitch x:Name="KonturToggle" Header="{l:Tr De='Kontur (Gegenlicht und leichter Stoffschimmer)', En='Contour (backlight and subtle fabric sheen)'}"
+                                                      OnContent="{l:Tr De='An', En='On'}" OffContent="{l:Tr De='Aus', En='Off'}" Toggled="Options_Changed" />
+                                        <HyperlinkButton Content="{l:Tr De='Standard wiederherstellen', En='Restore default'}" Click="ResetAdvanced_Click" Padding="0" />
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ContentControl>
+
+                <Button x:Name="StartButton" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" Height="40"
+                        Click="Start_Click" IsEnabled="False">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE768;" FontSize="14" />
+                        <TextBlock Text="{l:Tr De='Rendern starten', En='Start rendering'}" />
+                    </StackPanel>
+                </Button>
+                <TextBlock x:Name="StartHint" Style="{StaticResource HintTextStyle}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ============ Rechte Spalte: Ergebnis ============ -->
+        <Grid Grid.Column="1" RowSpacing="12" Margin="0,8,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <TextBlock x:Name="ResultTitle" Text="{l:Tr De='Ergebnis', En='Result'}" Style="{StaticResource SubtitleTextBlockStyle}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,140,0" />
+                <ToggleButton x:Name="ReferenceToggle" HorizontalAlignment="Right" IsEnabled="False" Click="ReferenceToggle_Click"
+                              ToolTipService.ToolTip="{l:Tr De='Referenzbild zum Vergleich anzeigen', En='Show the reference image for comparison'}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE8B9;" FontSize="14" />
+                        <TextBlock Text="{l:Tr De='Referenz', En='Reference'}" />
+                    </StackPanel>
+                </ToggleButton>
+            </Grid>
+
+            <Border Grid.Row="1" CornerRadius="8" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="#FF0A0A0C">
+                <Grid>
+                    <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                        <FontIcon Glyph="&#xE722;" FontSize="40" Foreground="#55FFFFFF" />
+                        <TextBlock Text="{l:Tr De='Hier erscheint das fertige Bild.', En='The finished image appears here.'}" Foreground="#99FFFFFF" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <Image x:Name="ResultImage" Stretch="Uniform" Margin="10" />
+                    <Border x:Name="ImageBadge" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="12" Padding="8,3" CornerRadius="4" Background="#B0000000">
+                        <TextBlock x:Name="ImageBadgeText" Foreground="White" FontSize="12" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <InfoBar x:Name="ResultInfoBar" IsClosable="True" />
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Name="PhaseText" Text="{l:Tr De='Bereit', En='Ready'}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="DeviceText" Style="{StaticResource HintTextStyle}" />
+                        </StackPanel>
+                        <TextBlock x:Name="TimeText" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource HintTextStyle}" />
+                    </Grid>
+                    <ProgressBar x:Name="RenderBar" Minimum="0" Maximum="100" Value="0" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="CancelButton" Click="Cancel_Click" Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE711;" FontSize="14" />
+                                <TextBlock Text="{l:Tr De='Abbrechen', En='Cancel'}" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="OpenImageButton" Click="OpenImage_Click" IsEnabled="False">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE8A7;" FontSize="14" />
+                                <TextBlock Text="{l:Tr De='Öffnen', En='Open'}" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="ShowInFolderButton" Click="ShowInFolder_Click" IsEnabled="False">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE838;" FontSize="14" />
+                                <TextBlock Text="{l:Tr De='Im Ordner zeigen', En='Show in folder'}" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="CopyButton" Click="Copy_Click" IsEnabled="False">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE8C8;" FontSize="14" />
+                                <TextBlock Text="{l:Tr De='Kopieren', En='Copy'}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Expander x:Name="LogExpander" Grid.Row="3" Header="{l:Tr De='Blender-Ausgabe', En='Blender output'}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <ScrollViewer x:Name="LogScroll" Height="200" HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled">
+                    <TextBlock x:Name="LogText" FontFamily="Cascadia Mono, Consolas" FontSize="11"
+                               IsTextSelectionEnabled="True" TextWrapping="NoWrap" />
+                </ScrollViewer>
+            </Expander>
+        </Grid>
+    </Grid>
+</Page>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>RetroShowroom.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Render-Skript, unverändert in die App eingebaut -->
+    <EmbeddedResource Include="Resources\vitrine.py" LogicalName="vitrine.py" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCnEncoder.Net" Version="2.3.0" />
+  </ItemGroup>
+
+</Project>

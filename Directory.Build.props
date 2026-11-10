@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Der WinUI-XAML-Compiler kann keine Pfade über 260 Zeichen. Damit das Projekt auch in tief
+      verschachtelten Ordnern baut, liegen Zwischendateien (obj) und Build-Ausgabe (bin) in einem kurzen
+      Ordner unter %TEMP%. Die fertige App entsteht mit „dotnet publish“ im Ordner dist.
+    -->
+    <RetroShowroomBuildRoot>$([System.IO.Path]::Combine($([System.IO.Path]::GetTempPath()), 'RetroShowroomBuild'))</RetroShowroomBuildRoot>
+    <BaseIntermediateOutputPath>$(RetroShowroomBuildRoot)\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(RetroShowroomBuildRoot)\bin\$(MSBuildProjectName)\</BaseOutputPath>
+    <!-- Debug-Infos in die DLLs einbetten statt eigener .pdb-Dateien (Fehlerprotokolle behalten Zeilennummern) -->
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+</Project>

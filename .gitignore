@@ -1,0 +1,10 @@
+# Build-Ausgabe (liegt normalerweise unter %TEMP%\RetroShowroomBuild, siehe Directory.Build.props)
+bin/
+obj/
+dist/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo

@@ -1,0 +1,5 @@
+# Das abgesegnete Render-Skript Byte für Byte unverändert lassen (keine Zeilenende-Umwandlung)
+src/RetroShowroom.Core/Resources/vitrine.py -text
+
+*.png binary
+*.ico binary
