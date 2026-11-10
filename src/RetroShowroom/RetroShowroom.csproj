@@ -19,7 +19,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <!-- Für ein Update: Version erhöhen, veröffentlichen und die .exe an ein GitHub-Release mit dem Tag v<Version> hängen -->
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <!-- Eigener Einstiegspunkt in Program.cs (die .exe kann auch als Installer für ein Update laufen) -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <Product>Retro Showroom</Product>
