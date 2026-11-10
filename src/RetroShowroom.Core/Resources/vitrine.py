@@ -12,6 +12,10 @@ Stile (vom Nutzer abgesegnet, 07.11.2026):
          (erstes fertiges YAZURAH-Bild).
   rot  = sehr dunkler Raum, Licht kommt aus den Vitrinen (Deckel nach unten, Sockel nach oben, warm-roetlich),
          rote Leuchtleisten oben/unten, schwarze Sockel, Logo roetlich eingefaerbt, roter Wandverlauf.
+In der App heissen die Stile nach ihrem Aussehen (10.11.2026): weiss = "Schwarz (Standard)", grau = "Weiss",
+rot = "Rot", rot_dunkel = "Rot, dunkel".
+Kleidung (Nutzerwunsch 10.11.2026): Das Teil wird in jedem Stil so beleuchtet wie im Stil rot (TEST_FINAL.png),
+damit Falten und Konturen immer gleich gut sichtbar sind. Der Stil aendert nur den Raum (Light Linking).
 TEST = 32 Samples, 1200 px (~25 s); FINAL = 160 Samples, 2400 x 1350 (~6-9 min CPU).
 """
 import bpy, sys, os, math
@@ -33,9 +37,10 @@ ROT_STIL = STIL != 'grau'          # alle Stile ausser grau: Licht kommt aus den
 GROSS = MODUS.upper() == 'GROSS'   # grosses Bild in hoher Qualitaet (3840 x 2160, 256 Samples)
 UNTERZEILE = 'RETRO STUDIOS'       # Sockelbeschriftung (Nutzerwunsch 08.11.2026, vorher RETRO ROLEPLAY)
 # Lichtstaerken je Stil (rot_dunkel = Nutzerwunsch 08.11.2026: Hintergrund dunkler, weniger ueberbelichtet)
-L = dict(rot=dict(deckel=60, sockel=45, front=70, rand=45, wand=45, leiste=2.5),
-         rot_dunkel=dict(deckel=40, sockel=12, front=45, rand=25, wand=18, leiste=1.8, teil=20),
-         weiss=dict(deckel=34, sockel=10, front=40, rand=22, wand=14, leiste=1.4, teil=18)).get(STIL)
+LICHT = dict(rot=dict(deckel=60, sockel=45, front=70, rand=45, wand=45, leiste=2.5),
+             rot_dunkel=dict(deckel=40, sockel=12, front=45, rand=25, wand=18, leiste=1.8, teil=20),
+             weiss=dict(deckel=34, sockel=10, front=40, rand=22, wand=14, leiste=1.4, teil=18))
+L = LICHT.get(STIL)
 
 # ---------------- Stil-Parameter ----------------
 ROT = (1.0, 0.32, 0.26)          # Akzentfarbe (Logo, Wand, Leuchtleisten) im Stil rot
@@ -292,10 +297,12 @@ def teil_importieren():
     return [o for o in bpy.data.objects if o not in vorher]
 
 stuecke = []
+STOFF_OBJEKTE = []                     # alle Meshes des Teils (fuer das Light Linking)
 for x, (label, drehung) in zip(XS, ANSICHTEN):
     neu = teil_importieren()
     root = [o for o in neu if o.parent is None][0]
     meshes = [o for o in neu if o.type == 'MESH']
+    STOFF_OBJEKTE += meshes
     arm = next((o for o in neu if o.type == 'ARMATURE'), None)
     if M_STOFF is None:
         alt = meshes[0].material_slots[0].material if meshes[0].material_slots else None
@@ -336,39 +343,79 @@ def flaeche(name, loc, rot, size, energy, color=(1, 1, 1)):
 def zielen(o, ziel):
     o.rotation_euler = (Vector(ziel) - o.location).to_track_quat('-Z', 'Y').to_euler()
 
-JACKE_Z = SOCKEL + H - 0.30 - 0.40
-if ROT_STIL:
+def rot_licht(Lx, warm, rot, faktor=1.0, leiste=None):
+    """Lichtaufbau der Rot-Stile. Gibt die Lichter zurueck (ohne Leuchtleisten)."""
+    lichter = []
     for x in XS:
         # Licht kommt aus den Vitrinen: Deckel nach unten, Sockel nach oben
-        for l in (flaeche('Deckel', (x, 0, SOCKEL + H - 0.02), (0, 0, 0), (W - 0.08, D - 0.08), L['deckel'], WARM),
-                  flaeche('Sockel_hoch', (x, 0, SOCKEL + 0.015), (math.radians(180), 0, 0), (W - 0.08, D - 0.08), L['sockel'], WARM)):
+        for l in (flaeche('Deckel', (x, 0, SOCKEL + H - 0.02), (0, 0, 0), (W - 0.08, D - 0.08), Lx['deckel'] * faktor, warm),
+                  flaeche('Sockel_hoch', (x, 0, SOCKEL + 0.015), (math.radians(180), 0, 0), (W - 0.08, D - 0.08), Lx['sockel'] * faktor, warm)):
             l.visible_glossy = False          # sonst spiegelt sich die Lichtflaeche als weisse Platte im Glasboden
             l.visible_transmission = False
-        if L.get('teil'):
+            lichter.append(l)
+        if Lx.get('teil'):
             # schwaches neutrales Licht gezielt aufs Teil, damit Drucke lesbar bleiben (ohne den Raum aufzuhellen)
             mitte_z = SOCKEL + H - (0.30 + 0.35 if TYP == 'oben' else 0.17 + 0.5)
-            lt = flaeche('Teil', (x, -2.0, mitte_z + 0.5), (0, 0, 0), (0.6, 0.6), L['teil'], (1.0, 0.92, 0.88))
+            lt = flaeche('Teil', (x, -2.0, mitte_z + 0.5), (0, 0, 0), (0.6, 0.6), Lx['teil'] * faktor, (1.0, 0.92, 0.88))
             lt.data.spread = math.radians(30)
             lt.visible_glossy = False; lt.visible_transmission = False   # sonst weisser Fleck als Spiegelung im Glas
             zielen(lt, (x, 0, mitte_z))
-        for z in (SOCKEL + H - 0.012, SOCKEL + 0.01):
-            box('Leiste', (W - 0.04, 0.012, 0.006), (x, -D / 2 + 0.02, z), M_LEUCHT)
-            box('Leiste', (W - 0.04, 0.012, 0.006), (x, D / 2 - 0.02, z), M_LEUCHT)
-    flaeche('Front', (0, -3.6, 2.2), (math.radians(62), 0, 0), (5.0, 1.6), L['front'])
-    flaeche('Rand_L', (-3.2, 1.2, 1.6), (math.radians(80), 0, math.radians(-115)), (0.6, 2.5), L['rand'], ROT)
-    flaeche('Rand_R', (3.2, 1.2, 1.6), (math.radians(80), 0, math.radians(115)), (0.6, 2.5), L['rand'], ROT)
-    wl = flaeche('Wandlicht', (0, 0.6, 0.15), (0, 0, 0), (4.5, 0.4), L['wand'], ROT)
-else:
+            lichter.append(lt)
+        if leiste is not None:
+            for z in (SOCKEL + H - 0.012, SOCKEL + 0.01):
+                box('Leiste', (W - 0.04, 0.012, 0.006), (x, -D / 2 + 0.02, z), leiste)
+                box('Leiste', (W - 0.04, 0.012, 0.006), (x, D / 2 - 0.02, z), leiste)
+    lichter.append(flaeche('Front', (0, -3.6, 2.2), (math.radians(62), 0, 0), (5.0, 1.6), Lx['front'] * faktor))
+    lichter.append(flaeche('Rand_L', (-3.2, 1.2, 1.6), (math.radians(80), 0, math.radians(-115)), (0.6, 2.5), Lx['rand'] * faktor, rot))
+    lichter.append(flaeche('Rand_R', (3.2, 1.2, 1.6), (math.radians(80), 0, math.radians(115)), (0.6, 2.5), Lx['rand'] * faktor, rot))
+    wl = flaeche('Wandlicht', (0, 0.6, 0.15), (0, 0, 0), (4.5, 0.4), Lx['wand'] * faktor, rot)
+    zielen(wl, (0, 2.4, 1.4))   # weicher Verlauf an der Rueckwand von unten
+    lichter.append(wl)
+    return lichter
+
+def grau_licht():
+    lichter = []
+    jacke_z = SOCKEL + H - 0.30 - 0.40
     for x in XS:
-        flaeche('Oben', (x, 0, SOCKEL + H + 0.9), (0, 0, 0), (0.6, 0.4), 110)
+        lichter.append(flaeche('Oben', (x, 0, SOCKEL + H + 0.9), (0, 0, 0), (0.6, 0.4), 110))
         l = flaeche('Jacke', (x, -2.3, 1.9), (0, 0, 0), (0.7, 0.7), 38)
         l.data.spread = math.radians(25)
-        zielen(l, (x, 0, JACKE_Z))
-    flaeche('Front', (0, -3.6, 2.6), (math.radians(58), 0, 0), (5.0, 1.6), 90)
-    flaeche('Rand_L', (-3.2, 1.2, 1.6), (math.radians(80), 0, math.radians(-115)), (0.6, 2.5), 120, (0.85, 0.85, 1.0))
-    flaeche('Rand_R', (3.2, 1.2, 1.6), (math.radians(80), 0, math.radians(115)), (0.6, 2.5), 120, (1.0, 0.9, 0.85))
+        zielen(l, (x, 0, jacke_z))
+        lichter.append(l)
+    lichter.append(flaeche('Front', (0, -3.6, 2.6), (math.radians(58), 0, 0), (5.0, 1.6), 90))
+    lichter.append(flaeche('Rand_L', (-3.2, 1.2, 1.6), (math.radians(80), 0, math.radians(-115)), (0.6, 2.5), 120, (0.85, 0.85, 1.0)))
+    lichter.append(flaeche('Rand_R', (3.2, 1.2, 1.6), (math.radians(80), 0, math.radians(115)), (0.6, 2.5), 120, (1.0, 0.9, 0.85)))
     wl = flaeche('Wandlicht', (0, 0.6, 0.15), (0, 0, 0), (4.5, 0.4), 140)
-zielen(wl, (0, 2.4, 1.4))   # weicher Verlauf an der Rueckwand von unten
+    zielen(wl, (0, 2.4, 1.4))   # weicher Verlauf an der Rueckwand von unten
+    lichter.append(wl)
+    return lichter
+
+# Kleidung immer wie im Stil rot beleuchten (TEST_FINAL.png, Nutzerwunsch 10.11.2026): Das Raumlicht des
+# Stils erreicht das Teil nicht, stattdessen bekommt das Teil unsichtbar den Lichtaufbau des Stils rot.
+# Im Stil rot selbst bleibt alles wie bisher.
+TEIL_STIL = 'rot'
+TEIL_WARM, TEIL_ROT = (1.0, 0.62, 0.55), (1.0, 0.32, 0.26)   # Lichtfarben im Stil rot
+TEIL_BELICHTUNG = 0.0                                         # Belichtung im Stil rot
+TEIL_EIGEN = STIL == TEIL_STIL
+# Die Belichtung wirkt aufs ganze Bild, also Licht fuers Teil so anpassen, dass es am Ende gleich hell ist.
+# Dazu ein kleiner Ausgleich fuers Streulicht, das der Raum je nach Stil aufs Teil wirft (gemessen 10.11.2026).
+KOMP = 2 ** (TEIL_BELICHTUNG - P['belichtung']) * dict(rot_dunkel=1.07, weiss=1.07, grau=0.97).get(STIL, 1.0)
+
+raum = rot_licht(L, WARM, ROT, leiste=M_LEUCHT) if ROT_STIL else grau_licht()
+if not TEIL_EIGEN:
+    ohne_teil = bpy.data.collections.new('Licht_ohne_Teil')
+    nur_teil = bpy.data.collections.new('Licht_nur_Teil')
+    for o in STOFF_OBJEKTE:
+        ohne_teil.objects.link(o)
+        nur_teil.objects.link(o)
+    for co in ohne_teil.collection_objects:
+        co.light_linking.link_state = 'EXCLUDE'
+    for co in nur_teil.collection_objects:
+        co.light_linking.link_state = 'INCLUDE'
+    for l in raum:
+        l.light_linking.receiver_collection = ohne_teil
+    for l in rot_licht(LICHT[TEIL_STIL], TEIL_WARM, TEIL_ROT, faktor=KOMP):
+        l.light_linking.receiver_collection = nur_teil   # trifft nur das Teil, spiegelt sich also auch nicht im Glas
 
 if SPOTS:
     # Strahler ueber jeder Vitrine: kleines schwarzes Gehaeuse mit leuchtender Linse, leicht nach vorne geneigt
@@ -379,26 +426,41 @@ if SPOTS:
         pos = Vector((x, -0.22, SOCKEL + H + 0.17))
         ziel_p = Vector((x, -0.05, teil_mitte))
         rot = (ziel_p - pos).to_track_quat('-Z', 'Y').to_euler()
-        bpy.ops.mesh.primitive_cylinder_add(radius=0.035, depth=0.11, vertices=24, location=pos, rotation=rot)
-        geh = bpy.context.active_object; geh.data.materials.append(M_GEH)
         richtung = (ziel_p - pos).normalized()
-        bpy.ops.mesh.primitive_circle_add(radius=0.03, vertices=24, fill_type='NGON', location=pos + richtung * 0.056, rotation=rot)
-        linse = bpy.context.active_object; linse.data.materials.append(M_LINSE); linse.visible_shadow = False
-        # Halterung zur Decke
-        bpy.ops.mesh.primitive_cylinder_add(radius=0.004, depth=1.2, location=(x, -0.22, pos.z + 0.6))
-        bpy.context.active_object.data.materials.append(M_GEH)
+        # Mitte ohne sichtbaren Strahler: Gehaeuse und Stange hingen sonst vor dem Logo (Nutzerwunsch 10.11.2026).
+        # Das Licht bleibt (unsichtbar), damit die mittlere Ansicht genauso hell ist wie die beiden anderen.
+        sichtbar = x != 0.0
+        if sichtbar:
+            bpy.ops.mesh.primitive_cylinder_add(radius=0.035, depth=0.11, vertices=24, location=pos, rotation=rot)
+            geh = bpy.context.active_object; geh.data.materials.append(M_GEH)
+            bpy.ops.mesh.primitive_circle_add(radius=0.03, vertices=24, fill_type='NGON', location=pos + richtung * 0.056, rotation=rot)
+            linse = bpy.context.active_object; linse.data.materials.append(M_LINSE); linse.visible_shadow = False
+            # Halterung zur Decke
+            bpy.ops.mesh.primitive_cylinder_add(radius=0.004, depth=1.2, location=(x, -0.22, pos.z + 0.6))
+            bpy.context.active_object.data.materials.append(M_GEH)
         sp = bpy.data.lights.new('Spot', 'SPOT')
-        sp.energy = SPOT_W; sp.spot_size = math.radians(34); sp.spot_blend = 0.35
+        sp.energy = SPOT_W * KOMP; sp.spot_size = math.radians(34); sp.spot_blend = 0.35
         sp.color = (1.0, 0.97, 0.92); sp.shadow_soft_size = 0.03
         so = bpy.data.objects.new('Spot', sp); sc.collection.objects.link(so)
         so.location = pos + richtung * 0.06; so.rotation_euler = rot
+        if not sichtbar:
+            so.visible_camera = False; so.visible_glossy = False; so.visible_transmission = False
+    # Logo an der Rueckwand: unsichtbarer Strahler von vorne oben (Nutzerwunsch 10.11.2026)
+    # Feste Leistung, unabhaengig von --spot_w: mehr Licht wusch die Logofarben aus (300 W schon pastellig)
+    ls = bpy.data.lights.new('Spot_Logo', 'SPOT')
+    ls.energy = 150; ls.spot_size = math.radians(40); ls.spot_blend = 0.6
+    ls.color = (1.0, 0.97, 0.92); ls.shadow_soft_size = 0.05
+    lo = bpy.data.objects.new('Spot_Logo', ls); sc.collection.objects.link(lo)
+    lo.location = (0, 2.39 - 1.3, LOGO_Z + 1.1)
+    zielen(lo, (0, 2.39, LOGO_Z))
+    lo.visible_camera = False; lo.visible_glossy = False; lo.visible_transmission = False
 
 if KONTUR:
     # Gegenlicht hinter jedem Teil (schraeg von oben hinten), unsichtbar fuer Kamera/Spiegelungen
     k_mitte = SOCKEL + H - (0.30 + 0.35 if TYP == 'oben' else 0.17 + 0.5)
     for x in XS:
         for sx in (-0.25, 0.25):
-            gl = flaeche('Gegenlicht', (x + sx, 0.45, k_mitte + 0.55), (0, 0, 0), (0.25, 0.9), 30, (1.0, 0.98, 0.95))
+            gl = flaeche('Gegenlicht', (x + sx, 0.45, k_mitte + 0.55), (0, 0, 0), (0.25, 0.9), 30 * KOMP, (1.0, 0.98, 0.95))
             zielen(gl, (x, 0, k_mitte))
             gl.visible_glossy = False; gl.visible_transmission = False
 

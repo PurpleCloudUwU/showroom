@@ -176,8 +176,9 @@
                                         <TextBlock Style="{StaticResource HintTextStyle}"
                                                    Text="{l:Tr De='Der Standard-Showroom ist abgesegnet. Nur ändern, wenn es ausdrücklich gewünscht ist.', En='The default showroom is approved. Only change this when explicitly requested.'}" />
                                         <ComboBox x:Name="StyleCombo" Header="{l:Tr De='Stil', En='Style'}" HorizontalAlignment="Stretch" SelectionChanged="Options_Changed">
-                                            <ComboBoxItem Content="{l:Tr De='Weiß (Standard)', En='White (default)'}" Tag="weiss" />
-                                            <ComboBoxItem Content="{l:Tr De='Grau', En='Grey'}" Tag="grau" />
+                                            <!-- Namen nach dem Aussehen (Nutzerwunsch 10.11.2026); die Tags bleiben, sie gehen so an vitrine.py -->
+                                            <ComboBoxItem Content="{l:Tr De='Schwarz (Standard)', En='Black (default)'}" Tag="weiss" />
+                                            <ComboBoxItem Content="{l:Tr De='Weiß', En='White'}" Tag="grau" />
                                             <ComboBoxItem Content="{l:Tr De='Rot', En='Red'}" Tag="rot" />
                                             <ComboBoxItem Content="{l:Tr De='Rot, dunkel', En='Red, dark'}" Tag="rot_dunkel" />
                                         </ComboBox>
