@@ -100,7 +100,6 @@
                             <StackPanel Spacing="14">
                                 <TextBlock Text="{l:Tr De='Beschriftung und Typ', En='Label and type'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                 <TextBox x:Name="TitleBox" Header="{l:Tr De='Titel auf dem Sockel', En='Title on the base'}"
-                                         PlaceholderText="{l:Tr De='z. B. YAZURAH 893', En='e.g. YAZURAH 893'}"
                                          CharacterCasing="Upper" MaxLength="40" TextChanged="TitleBox_TextChanged" />
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>

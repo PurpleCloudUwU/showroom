@@ -9,7 +9,7 @@ public static class TextureDecoder
 {
     public static byte[] ToRgba(YtdTexture t)
     {
-        if (t.Mip0.Length == 0)
+        if (t.DataLength == 0)
             throw Unsupported(t);
 
         int w = t.Width, h = t.Height;
@@ -86,6 +86,9 @@ public static class TextureDecoder
     private static byte[] Bc(YtdTexture t, CompressionFormat format)
     {
         var decoder = new BcDecoder();
+        // BC7 ist aufwendig: Blöcke auf allen Kernen dekodieren (gemessen 169 → 46 ms bei 2048 × 2048).
+        // Bei den einfachen Formaten kostet das Verteilen mehr, als es bringt.
+        decoder.Options.IsParallel = format == CompressionFormat.Bc7;
         ColorRgba32[] pixels = decoder.DecodeRaw(t.Mip0, t.Width, t.Height, format);
         return MemoryMarshal.AsBytes(pixels.AsSpan()).ToArray();
     }

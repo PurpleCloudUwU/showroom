@@ -51,9 +51,9 @@ public static class TexturePreparer
     /// <summary>Diffuse-Textur bevorzugen, Normal-/Spekular-Maps nach hinten.</summary>
     private static YtdTexture PickDefault(IReadOnlyList<YtdTexture> textures)
     {
-        return textures.FirstOrDefault(t => t.Name.Contains("_diff_", StringComparison.OrdinalIgnoreCase) && t.Mip0.Length > 0)
-               ?? textures.FirstOrDefault(t => t.Mip0.Length > 0 && !IsAuxMap(t.Name))
-               ?? textures.FirstOrDefault(t => t.Mip0.Length > 0)
+        return textures.FirstOrDefault(t => t.Name.Contains("_diff_", StringComparison.OrdinalIgnoreCase) && t.DataLength > 0)
+               ?? textures.FirstOrDefault(t => t.DataLength > 0 && !IsAuxMap(t.Name))
+               ?? textures.FirstOrDefault(t => t.DataLength > 0)
                ?? textures[0];
     }
 

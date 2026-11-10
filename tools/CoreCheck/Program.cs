@@ -1,12 +1,43 @@
 // Prüfprogramm für den Kern: YTD lesen, PNG schreiben, Dateinamen erkennen, Blender-Aufruf zusammenbauen.
 // Aufruf: CoreCheck <teil.ydd> <textur.ytd> <ausgabeordner>
 //         CoreCheck --gpu-test <teil.ydd> <textur.ytd> <ausgabeordner>
+//         CoreCheck --update-test     (Updater gegen einen Testserver auf localhost)
+//         CoreCheck --update-live     (fragt das echte Release bei GitHub ab, lädt nichts herunter)
+//         CoreCheck --bench [größe]   (misst Textur-Umwandlung mit erzeugten Daten)
 using System.Diagnostics;
 using RetroShowroom.Core;
 
 if (args[0] == "--skript")
 {
     Console.WriteLine(RenderScript.Extract());
+    return;
+}
+
+if (args[0] == "--update-test")
+{
+    // Eigener Datenordner, damit die echten Einstellungen unberührt bleiben (muss vor dem ersten Zugriff auf AppPaths stehen)
+    var data = Path.Combine(Path.GetTempPath(), "RetroShowroomUpdateTest_" + Guid.NewGuid().ToString("N")[..8]);
+    Environment.SetEnvironmentVariable("RETROSHOWROOM_DATA", data);
+    try
+    {
+        Environment.ExitCode = await UpdateTest.RunAsync();
+    }
+    finally
+    {
+        try { Directory.Delete(data, true); } catch { }
+    }
+    return;
+}
+
+if (args[0] == "--update-live")
+{
+    Environment.ExitCode = await UpdateTest.LiveAsync();
+    return;
+}
+
+if (args[0] == "--bench")
+{
+    Bench.Run(args.Length > 1 ? int.Parse(args[1]) : 2048);
     return;
 }
 
@@ -25,7 +56,7 @@ Console.WriteLine(YtdReader.Describe(ytd));
 var sw = Stopwatch.StartNew();
 var textures = YtdReader.Read(ytd);
 foreach (var t in textures)
-    Console.WriteLine($"  {t.Name}: {t.Width}x{t.Height}, {t.FormatName}, Mips {t.MipLevels}, Mip0 {t.Mip0.Length} B");
+    Console.WriteLine($"  {t.Name}: {t.Width}x{t.Height}, {t.FormatName}, Mips {t.MipLevels}, Mip0 {t.DataLength} B");
 Console.WriteLine($"  gelesen in {sw.ElapsedMilliseconds} ms");
 
 sw.Restart();

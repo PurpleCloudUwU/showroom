@@ -2,6 +2,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using RetroShowroom.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -26,10 +27,13 @@ public sealed partial class RenderPage : Page
     private volatile RenderProgress? _progress;
     private volatile string? _notice;
     private string? _lastOutput;
+    // Ergebnis und Referenzbild fertig dekodiert, damit der Vergleich ohne Wartezeit umschaltet
+    private readonly Dictionary<string, (long Stamp, BitmapImage Image)> _images = new(StringComparer.OrdinalIgnoreCase);
 
     public RenderPage()
     {
         InitializeComponent();
+        LogExpander.Expanding += (_, _) => RefreshLog();
         _timer = DispatcherQueue.CreateTimer();
         _timer.Interval = TimeSpan.FromMilliseconds(400);
         _timer.Tick += (_, _) => RefreshRenderUi();
@@ -257,8 +261,13 @@ public sealed partial class RenderPage : Page
 
         if (autoTexture)
         {
+            // Den Ordner im Hintergrund durchsuchen: In Kleidungspaketen liegen oft Zehntausende Dateien
+            var part = _part;
+            ClearTexture(Loc.T("Passende Textur wird gesucht …", "Looking for the matching texture …"));
+            var candidates = await Task.Run(part.FindTextureCandidates);
+            if (!ReferenceEquals(part, _part)) return;
             _texturePaths.Clear();
-            _texturePaths.AddRange(_part.FindTextureCandidates());
+            _texturePaths.AddRange(candidates);
             RefreshTextureCombo(_texturePaths.Count > 0 ? 0 : -1);
             if (_texturePaths.Count > 0)
                 await LoadTextureAsync(_texturePaths[0], null);
@@ -540,15 +549,9 @@ public sealed partial class RenderPage : Page
 
     private void RefreshRenderUi()
     {
-        if (_log.TakeChanged(out var text))
-        {
-            LogText.Text = text;
-            if (LogExpander.IsExpanded)
-            {
-                LogScroll.UpdateLayout();
-                LogScroll.ChangeView(null, LogScroll.ScrollableHeight, null, true);
-            }
-        }
+        // Die Blender-Ausgabe (bis zu 600 Zeilen) nur aufbereiten, solange sie aufgeklappt ist.
+        // Zugeklappt kostete das sonst alle 400 ms einen großen Text samt Layout, den niemand sieht.
+        if (LogExpander.IsExpanded) RefreshLog();
         if (!_rendering) return;
 
         if (_notice is { } n)
@@ -577,6 +580,14 @@ public sealed partial class RenderPage : Page
             }
         }
         TimeText.Text = time;
+    }
+
+    private void RefreshLog()
+    {
+        if (!_log.TakeChanged(out var text)) return;
+        LogText.Text = text;
+        LogScroll.UpdateLayout();
+        LogScroll.ChangeView(null, LogScroll.ScrollableHeight, null, true);
     }
 
     private async Task ShowResultAsync(RenderResult r)
@@ -625,7 +636,14 @@ public sealed partial class RenderPage : Page
     {
         try
         {
-            ResultImage.Source = await Ui.LoadBitmapAsync(path, 2560);
+            long stamp = File.GetLastWriteTimeUtc(path).Ticks;
+            if (!_images.TryGetValue(path, out var cached) || cached.Stamp != stamp)
+            {
+                cached = (stamp, await Ui.LoadBitmapAsync(path, 2560));
+                if (_images.Count >= 2) _images.Clear(); // höchstens Ergebnis und Referenz
+                _images[path] = cached;
+            }
+            ResultImage.Source = cached.Image;
             EmptyState.Visibility = Visibility.Collapsed;
             ImageBadge.Visibility = badge is null ? Visibility.Collapsed : Visibility.Visible;
             ImageBadgeText.Text = badge ?? "";

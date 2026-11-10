@@ -29,15 +29,19 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         string? startPage = null;
-        foreach (var a in Environment.GetCommandLineArgs().Skip(1))
+        var arguments = Environment.GetCommandLineArgs().Skip(1).ToList();
+        foreach (var a in arguments)
         {
             if (a.StartsWith("--seite=", StringComparison.OrdinalIgnoreCase))
                 startPage = a["--seite=".Length..].ToLowerInvariant();
-            else if (File.Exists(a))
+            else if (!a.StartsWith("--", StringComparison.Ordinal) && File.Exists(a))
                 AppState.StartupFiles.Add(Path.GetFullPath(a));
         }
 
-        TexturePreparer.CleanCache(TimeSpan.FromDays(14));
+        UpdateManager.NoteStartup(arguments);
+        // Alte Cache-Dateien im Hintergrund aufräumen, das Fenster wartet nicht darauf
+        _ = Task.Run(() => TexturePreparer.CleanCache(TimeSpan.FromDays(14)));
+
         MainWindow = new MainWindow(startPage);
         MainWindow.Activate();
     }

@@ -1,3 +1,4 @@
+using System.IO.Enumeration;
 using System.Text.RegularExpressions;
 
 namespace RetroShowroom.Core;
@@ -58,21 +59,20 @@ public sealed partial class PartInfo
         var dir = Path.GetDirectoryName(FullPath);
         if (dir is null || !Directory.Exists(dir)) return [];
 
-        var files = Directory.EnumerateFiles(dir).Where(IsTextureFile).ToList();
         List<string> hits;
         if (Component is not null && Index is not null)
         {
             var exact = (Prefix ?? "") + Component + "_diff_" + Index + "_";
-            hits = files.Where(f => Path.GetFileName(f).StartsWith(exact, StringComparison.OrdinalIgnoreCase)).ToList();
+            hits = Scan(dir, name => name.StartsWith(exact, StringComparison.OrdinalIgnoreCase)).ToList();
             if (hits.Count == 0)
             {
                 var loose = Component + "_diff_" + Index + "_";
-                hits = files.Where(f => Path.GetFileName(f).Contains(loose, StringComparison.OrdinalIgnoreCase)).ToList();
+                hits = Scan(dir, name => name.Contains(loose, StringComparison.OrdinalIgnoreCase)).ToList();
             }
         }
         else
         {
-            hits = files.Where(f => Path.GetFileName(f).Contains("_diff_", StringComparison.OrdinalIgnoreCase)).Take(40).ToList();
+            hits = Scan(dir, name => name.Contains("_diff_", StringComparison.OrdinalIgnoreCase)).Take(40).ToList();
         }
 
         // Alphabetisch (Variante a, b, c …), bei gleichem Namen .ytd vor .png
@@ -81,4 +81,22 @@ public sealed partial class PartInfo
             .ThenBy(f => Path.GetExtension(f).Equals(".ytd", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
             .ToList();
     }
+
+    private delegate bool NameFilter(ReadOnlySpan<char> fileName);
+
+    /// <summary>
+    /// Texturdateien (.ytd/.png) im Ordner, deren Name zum Filter passt. In Kleidungspaketen liegen oft
+    /// Zehntausende Dateien in einem Ordner: Der Filter läuft direkt auf dem Namen aus dem Verzeichniseintrag,
+    /// ein Pfad-String entsteht nur für Treffer.
+    /// </summary>
+    private static IEnumerable<string> Scan(string dir, NameFilter filter) =>
+        new FileSystemEnumerable<string>(dir,
+            (ref FileSystemEntry e) => e.ToFullPath(),
+            new EnumerationOptions { AttributesToSkip = 0, IgnoreInaccessible = false })
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry e) =>
+                !e.IsDirectory
+                && (e.FileName.EndsWith(".ytd", StringComparison.OrdinalIgnoreCase) || e.FileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                && filter(e.FileName),
+        };
 }

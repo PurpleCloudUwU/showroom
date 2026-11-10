@@ -151,6 +151,75 @@
                 </Grid>
             </Border>
 
+            <!-- ================= Updates ================= -->
+            <TextBlock Text="Updates" Style="{StaticResource SectionHeaderStyle}" />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="44" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon x:Name="UpdateIcon" Glyph="&#xE895;" FontSize="20" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock x:Name="UpdateTitle" />
+                            <TextBlock x:Name="UpdateDetail" Style="{StaticResource HintTextStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <HyperlinkButton x:Name="UpdateNotesLink" Content="{l:Tr De='Versionshinweise', En='Release notes'}"
+                                             Click="UpdateNotes_Click" Visibility="Collapsed" />
+                            <Button x:Name="UpdateCancelButton" Content="{l:Tr De='Abbrechen', En='Cancel'}" Click="UpdateCancel_Click" Visibility="Collapsed" />
+                            <Button x:Name="UpdateActionButton" Style="{StaticResource AccentButtonStyle}" Click="UpdateAction_Click" Visibility="Collapsed" />
+                            <Button x:Name="UpdateCheckButton" Content="{l:Tr De='Jetzt suchen', En='Check now'}" Click="UpdateCheck_Click" />
+                        </StackPanel>
+                    </Grid>
+                    <ProgressBar x:Name="UpdateProgress" Minimum="0" Maximum="100" Visibility="Collapsed" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE823;" FontSize="20" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{l:Tr De='Nach Updates suchen', En='Check for updates'}" />
+                        <TextBlock Style="{StaticResource HintTextStyle}"
+                                   Text="{l:Tr De='Wie oft die App bei GitHub nach einer neuen Version fragt. Übertragen wird dabei nichts über dich oder deinen Rechner.', En='How often the app asks GitHub for a new version. Nothing about you or your computer is sent.'}" />
+                    </StackPanel>
+                    <ComboBox x:Name="UpdateCheckCombo" Grid.Column="2" MinWidth="180" VerticalAlignment="Center" SelectionChanged="UpdateCheckCombo_SelectionChanged">
+                        <ComboBoxItem Content="{l:Tr De='Bei jedem Start', En='On every start'}" Tag="start" />
+                        <ComboBoxItem Content="{l:Tr De='Täglich', En='Daily'}" Tag="daily" />
+                        <ComboBoxItem Content="{l:Tr De='Wöchentlich', En='Weekly'}" Tag="weekly" />
+                        <ComboBoxItem Content="{l:Tr De='Monatlich', En='Monthly'}" Tag="monthly" />
+                        <ComboBoxItem Content="{l:Tr De='Nie', En='Never'}" Tag="never" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE896;" FontSize="20" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{l:Tr De='Updates automatisch installieren', En='Install updates automatically'}" />
+                        <TextBlock Style="{StaticResource HintTextStyle}"
+                                   Text="{l:Tr De='Neue Versionen werden im Hintergrund geladen und beim Schließen der App installiert, ein laufendes Rendern wird nie unterbrochen. Aus = die App meldet neue Versionen nur und installiert erst auf Knopfdruck.', En='New versions are downloaded in the background and installed when you close the app. A running render is never interrupted. Off = the app only tells you about new versions and installs them when you click the button.'}" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="AutoUpdateToggle" Grid.Column="2" OnContent="{l:Tr De='An', En='On'}" OffContent="{l:Tr De='Aus', En='Off'}"
+                                  MinWidth="0" Toggled="AutoUpdateToggle_Toggled" />
+                </Grid>
+            </Border>
+
             <!-- ================= Über ================= -->
             <TextBlock Text="{l:Tr De='Über', En='About'}" Style="{StaticResource SectionHeaderStyle}" />
             <Border Style="{StaticResource CardStyle}">

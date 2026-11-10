@@ -153,7 +153,9 @@ public sealed partial class SetupPage : Page
         SummaryBar.Message = (open == 0
                                  ? Loc.T("Du kannst rendern.", "You can render now.")
                                  : Loc.T("Die rot markierten Punkte erledigen und danach „Erneut prüfen“.", "Fix the items marked in red, then click \"Check again\"."))
-                             + Loc.T($" Geprüft um {r.CheckedAt:HH:mm} Uhr.", $" Checked at {r.CheckedAt:HH:mm}.");
+                             + (r.FromCache
+                                 ? Loc.T(" Stand der letzten Prüfung, wird gerade aktualisiert …", " Result of the last check, updating now …")
+                                 : Loc.T($" Geprüft um {r.CheckedAt:HH:mm} Uhr.", $" Checked at {r.CheckedAt:HH:mm}."));
     }
 
     private static void Asset(FontIcon icon, TextBlock detail, string? path, bool required, string missingText)

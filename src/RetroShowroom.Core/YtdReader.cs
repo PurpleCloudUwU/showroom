@@ -15,8 +15,19 @@ public sealed class YtdTexture
     public required int MipLevels { get; init; }
     public required TextureFormat Format { get; init; }
     public required uint RawFormat { get; init; }
-    /// <summary>Rohdaten der größten Mip-Stufe.</summary>
-    public required byte[] Mip0 { get; init; }
+    /// <summary>Größe der Rohdaten der größten Mip-Stufe in Bytes (0 = nicht lesbar).</summary>
+    public required int DataLength { get; init; }
+
+    /// <summary>Die entpackte Datei und die Stelle darin, an der die Daten dieser Textur liegen.</summary>
+    internal byte[]? Source { get; init; }
+    internal int SourceOffset { get; init; }
+    private byte[]? _mip0;
+
+    /// <summary>
+    /// Rohdaten der größten Mip-Stufe. Sie werden erst beim ersten Zugriff aus der entpackten Datei kopiert:
+    /// Eine YTD enthält oft mehrere Texturen, gebraucht wird meist nur eine.
+    /// </summary>
+    public byte[] Mip0 => _mip0 ??= Source is null || DataLength == 0 ? [] : Source.AsSpan(SourceOffset, DataLength).ToArray();
 
     public string FormatName => Format switch
     {
@@ -79,12 +90,13 @@ public static class YtdReader
 
         uint version = BinaryPrimitives.ReadUInt32LittleEndian(file.AsSpan(4));
         uint sysFlags = BinaryPrimitives.ReadUInt32LittleEndian(file.AsSpan(8));
+        uint gfxFlags = BinaryPrimitives.ReadUInt32LittleEndian(file.AsSpan(12));
         int sysSize = PageFlagsSize(sysFlags);
 
         byte[] data;
         try
         {
-            data = Inflate(file, 16);
+            data = Inflate(file, 16, (long)sysSize + PageFlagsSize(gfxFlags));
         }
         catch (InvalidDataException)
         {
@@ -109,19 +121,18 @@ public static class YtdReader
         long dataOff = v.Resolve(v.U64(t + 0x70));
         var format = MapFormat(raw);
 
-        byte[] mip0 = [];
         int size = Mip0Size(format, width, height, stride);
-        if (format != TextureFormat.Unknown && width > 0 && height > 0 && dataOff >= 0)
-        {
-            if (dataOff + size > v.Length)
-                throw new InvalidDataException(Loc.T($"Textur „{name}“ ist abgeschnitten.", $"Texture \"{name}\" is truncated."));
-            mip0 = v.Slice(dataOff, size);
-        }
+        bool readable = format != TextureFormat.Unknown && width > 0 && height > 0 && dataOff >= 0 && size > 0;
+        if (readable && dataOff + size > v.Length)
+            throw new InvalidDataException(Loc.T($"Textur „{name}“ ist abgeschnitten.", $"Texture \"{name}\" is truncated."));
 
         return new YtdTexture
         {
             Name = name, Width = width, Height = height, Stride = stride, MipLevels = levels,
-            Format = format, RawFormat = raw, Mip0 = mip0,
+            Format = format, RawFormat = raw,
+            DataLength = readable ? size : 0,
+            Source = readable ? v.Data : null,
+            SourceOffset = readable ? (int)dataOff : 0,
         };
     }
 
@@ -171,10 +182,32 @@ public static class YtdReader
         return (int)(baseSize * (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8));
     }
 
-    private static byte[] Inflate(byte[] file, int offset)
+    private const long MaxPreallocate = 512L << 20;
+
+    /// <param name="expectedSize">Entpackte Größe laut Dateikopf (System- plus Grafikteil).</param>
+    private static byte[] Inflate(byte[] file, int offset, long expectedSize)
     {
         using var input = new MemoryStream(file, offset, file.Length - offset, writable: false);
         using var deflate = new DeflateStream(input, CompressionMode.Decompress);
+
+        // Normalfall: Die Größe aus dem Kopf stimmt. Dann gleich passend anlegen, statt einen wachsenden Puffer
+        // mehrfach zu verdoppeln und am Ende noch einmal komplett zu kopieren (bei großen YTDs zig MB).
+        if (expectedSize > 0 && expectedSize <= MaxPreallocate)
+        {
+            var data = GC.AllocateUninitializedArray<byte>((int)expectedSize);
+            int read = deflate.ReadAtLeast(data, data.Length, throwOnEndOfStream: false);
+            if (read < data.Length) return data.AsSpan(0, read).ToArray();
+            int next = deflate.ReadByte();
+            if (next < 0) return data;
+
+            // Mehr Daten als angekündigt: den Rest anhängen
+            using var more = new MemoryStream(data.Length + (data.Length >> 1));
+            more.Write(data);
+            more.WriteByte((byte)next);
+            deflate.CopyTo(more);
+            return more.ToArray();
+        }
+
         using var output = new MemoryStream();
         deflate.CopyTo(output);
         return output.ToArray();
@@ -184,6 +217,7 @@ public static class YtdReader
     {
         public int Length => data.Length;
         public int SystemSize => systemSize;
+        public byte[] Data => data;
 
         /// <summary>Virtuelle Adresse (0x5… System, 0x6… Grafik) in einen Offset umrechnen, -1 wenn ungültig.</summary>
         public long Resolve(ulong ptr)
@@ -204,7 +238,6 @@ public static class YtdReader
         public ushort U16(long o) => BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan((int)o, 2));
         public uint U32(long o) => BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan((int)o, 4));
         public ulong U64(long o) => BinaryPrimitives.ReadUInt64LittleEndian(data.AsSpan((int)o, 8));
-        public byte[] Slice(long o, int len) => data.AsSpan((int)o, len).ToArray();
 
         public string? CString(long o)
         {

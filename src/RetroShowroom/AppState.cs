@@ -1,3 +1,4 @@
+using Microsoft.UI.Dispatching;
 using RetroShowroom.Core;
 
 namespace RetroShowroom;
@@ -29,6 +30,13 @@ internal static class AppState
     {
         try
         {
+            // Direkt nach dem Start: sofort den Stand der letzten Prüfung zeigen, damit „Rendern starten“ nicht
+            // 3 bis 7 Sekunden gesperrt ist. Die echte Prüfung läuft gleich danach und ersetzt ihn.
+            if (Setup is null && await Task.Run(() => SetupCache.TryLoad(Settings)) is { } remembered && Setup is null)
+            {
+                Setup = remembered;
+                NotifyChanged();
+            }
             Setup = await Task.Run(() => SetupChecker.RunAsync(Settings));
         }
         catch (Exception ex)
@@ -51,10 +59,71 @@ internal static class AppState
         NotifyChanged();
     }
 
+    public static void NotifyChanged() => Changed?.Invoke(null, EventArgs.Empty);
+
+    // ---------------------------------------------------------------- Einstellungen speichern
+
+    private static readonly object SaveLock = new();
+    private static DispatcherQueueTimer? _saveTimer;
+    private static bool _saveQueued;
+    private static long _saveSequence, _savedSequence;
+
+    /// <summary>
+    /// Einstellungen speichern (aus dem UI-Thread). Mehrere Änderungen kurz hintereinander, etwa beim Halten der
+    /// Pfeiltaste im Zahlenfeld, ergeben einen einzigen Schreibvorgang, und der läuft nicht im UI-Thread.
+    /// Vor dem Beenden oder einem Neustart <see cref="FlushSettings"/> aufrufen.
+    /// </summary>
     public static void SaveSettings()
     {
-        try { Settings.Save(); } catch { }
+        _saveQueued = true;
+        if (_saveTimer is null)
+        {
+            if (DispatcherQueue.GetForCurrentThread() is not { } dispatcher)
+            {
+                FlushSettings();
+                return;
+            }
+            _saveTimer = dispatcher.CreateTimer();
+            _saveTimer.Interval = TimeSpan.FromMilliseconds(400);
+            _saveTimer.IsRepeating = false;
+            _saveTimer.Tick += (_, _) => WriteQueued(background: true);
+        }
+        _saveTimer.Stop();
+        _saveTimer.Start();
     }
 
-    public static void NotifyChanged() => Changed?.Invoke(null, EventArgs.Empty);
+    /// <summary>Noch nicht geschriebene Einstellungen sofort speichern.</summary>
+    public static void FlushSettings()
+    {
+        _saveTimer?.Stop();
+        WriteQueued(background: false);
+    }
+
+    private static void WriteQueued(bool background)
+    {
+        if (!_saveQueued) return;
+        _saveQueued = false;
+
+        string json;
+        try { json = Settings.ToJson(); } catch { return; }
+        long sequence = ++_saveSequence;
+
+        if (background) Task.Run(Write);
+        else Write();
+
+        void Write()
+        {
+            lock (SaveLock)
+            {
+                // Ein älterer Stand darf einen neueren nicht überschreiben
+                if (sequence < _savedSequence) return;
+                try
+                {
+                    AppSettings.WriteJson(json);
+                    _savedSequence = sequence;
+                }
+                catch { }
+            }
+        }
+    }
 }

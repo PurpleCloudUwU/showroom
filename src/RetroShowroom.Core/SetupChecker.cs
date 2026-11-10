@@ -13,6 +13,10 @@ public sealed class SetupReport
     public const string ExpectedSollumzKey = "bl_ext.user_default.sollumz";
 
     public DateTime CheckedAt { get; init; } = DateTime.Now;
+    /// <summary>
+    /// Stand der letzten Prüfung aus <see cref="SetupCache"/>. Wird angezeigt, bis die laufende Prüfung fertig ist.
+    /// </summary>
+    public bool FromCache { get; init; }
 
     public string? BlenderPath { get; set; }
     public bool BlenderProbed { get; set; }
@@ -139,6 +143,8 @@ public static class SetupChecker
                 report.BlenderError = ex.Message;
             }
         }
+        // Für den nächsten Start merken (oder den alten Stand verwerfen, wenn Blender nicht mehr passt)
+        SetupCache.Save(report);
         return report;
     }
 
@@ -216,8 +222,7 @@ public static class SetupChecker
                 if (e.GetString() is { Length: > 0 } s)
                     report.SkeletonPaths.Add(s);
 
-        report.SkeletonMale = FindSkeleton(report.SkeletonPaths, 'm');
-        report.SkeletonFemale = FindSkeleton(report.SkeletonPaths, 'f');
+        ResolveSkeletons(report);
 
         if (root.TryGetProperty("gpus", out var gpus))
             foreach (var g in gpus.EnumerateArray())
@@ -226,6 +231,13 @@ public static class SetupChecker
                 foreach (var n in g.GetProperty("names").EnumerateArray())
                     report.Gpus.Add(new GpuDevice(GpuHook.BackendName(type), n.GetString() ?? "?"));
             }
+    }
+
+    /// <summary>Sucht in den eingetragenen Pfaden die Skelette für beide Geschlechter.</summary>
+    internal static void ResolveSkeletons(SetupReport report)
+    {
+        report.SkeletonMale = FindSkeleton(report.SkeletonPaths, 'm');
+        report.SkeletonFemale = FindSkeleton(report.SkeletonPaths, 'f');
     }
 
     private static string? FindSkeleton(IEnumerable<string> paths, char gender)

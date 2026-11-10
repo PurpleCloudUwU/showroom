@@ -52,7 +52,24 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <Frame x:Name="ContentFrame" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Hinweis auf Updates, über jeder Seite sichtbar -->
+                <InfoBar x:Name="UpdateBar" Margin="28,8,28,4" Visibility="Collapsed" Closed="UpdateBar_Closed">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="UpdateBarButton" Click="UpdateBarButton_Click" />
+                    </InfoBar.ActionButton>
+                    <InfoBar.Content>
+                        <ProgressBar x:Name="UpdateBarProgress" Minimum="0" Maximum="100" Margin="0,0,16,14" Visibility="Collapsed" />
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <Frame x:Name="ContentFrame" Grid.Row="1" />
+            </Grid>
         </NavigationView>
     </Grid>
 </Window>

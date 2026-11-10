@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -377,13 +378,21 @@ public sealed partial class RenderRunner
     }
 }
 
-public static class OutputNaming
+public static partial class OutputNaming
 {
+    // Wird bei jedem Tastendruck im Titelfeld gebraucht: Zeichensatz und Muster nur einmal anlegen
+    private static readonly SearchValues<char> Invalid = SearchValues.Create([.. Path.GetInvalidFileNameChars(), '#']);
+
+    [GeneratedRegex("_+")]
+    private static partial Regex Underscores();
+
     public static string Safe(string title)
     {
-        var invalid = Path.GetInvalidFileNameChars().Append('#').ToHashSet();
-        var chars = title.Trim().Select(c => invalid.Contains(c) || char.IsWhiteSpace(c) ? '_' : c).ToArray();
-        var s = Regex.Replace(new string(chars), "_+", "_").Trim('_', '.');
+        var chars = title.Trim().ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+            if (Invalid.Contains(chars[i]) || char.IsWhiteSpace(chars[i]))
+                chars[i] = '_';
+        var s = Underscores().Replace(new string(chars), "_").Trim('_', '.');
         return s.Length == 0 ? "SHOWROOM" : s;
     }
 

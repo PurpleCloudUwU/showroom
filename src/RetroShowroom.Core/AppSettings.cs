@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RetroShowroom.Core;
 
@@ -26,20 +27,31 @@ public sealed class AppSettings
     /// <summary>Grafikkarte zum Rendern verwenden (Rückfall auf CPU bei Fehlern). false = nur CPU.</summary>
     public bool UseGpu { get; set; } = true;
 
+    // Updates
+    /// <summary>Wie oft nach einer neuen Version gesucht wird (siehe <see cref="UpdateSchedule"/>).</summary>
+    public string UpdateCheck { get; set; } = UpdateSchedule.Daily;
+    /// <summary>Neue Versionen im Hintergrund laden und beim Schließen der App installieren. false = vorher fragen.</summary>
+    public bool AutoUpdate { get; set; } = true;
+    /// <summary>Zeitpunkt der letzten erfolgreichen Abfrage (UTC).</summary>
+    public DateTime? LastUpdateCheck { get; set; }
+    /// <summary>Version beim letzten Start (für den Hinweis „wurde aktualisiert“).</summary>
+    public string? LastRunVersion { get; set; }
+
     public static string DefaultOutputFolder =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Retro Showrooms");
 
+    [JsonIgnore]
     public string EffectiveOutputFolder =>
         string.IsNullOrWhiteSpace(OutputFolder) ? DefaultOutputFolder : OutputFolder;
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly object WriteLock = new();
 
     public static AppSettings Load()
     {
         try
         {
             if (File.Exists(AppPaths.SettingsFile))
-                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(AppPaths.SettingsFile), JsonOptions) ?? new();
+                return JsonSerializer.Deserialize(File.ReadAllText(AppPaths.SettingsFile), CoreJsonContext.Default.AppSettings) ?? new();
         }
         catch
         {
@@ -49,12 +61,20 @@ public sealed class AppSettings
         return new();
     }
 
-    public void Save()
+    public string ToJson() => JsonSerializer.Serialize(this, CoreJsonContext.Default.AppSettings);
+
+    public void Save() => WriteJson(ToJson());
+
+    /// <summary>Schreibt bereits serialisierte Einstellungen (darf aus einem Hintergrund-Thread kommen).</summary>
+    public static void WriteJson(string json)
     {
-        AppPaths.Ensure(AppPaths.DataDir);
-        var tmp = AppPaths.SettingsFile + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(this, JsonOptions));
-        File.Move(tmp, AppPaths.SettingsFile, true);
+        lock (WriteLock)
+        {
+            AppPaths.Ensure(AppPaths.DataDir);
+            var tmp = AppPaths.SettingsFile + ".tmp";
+            File.WriteAllText(tmp, json);
+            File.Move(tmp, AppPaths.SettingsFile, true);
+        }
     }
 }
 
@@ -67,3 +87,13 @@ public static class RenderDefaults
     public const double SpotWatt = 250;
     public const bool Kontur = true;
 }
+
+/// <summary>
+/// JSON ohne Reflexion (vom Compiler erzeugt). Das spart beim Start das Aufwärmen des Serialisierers:
+/// Die Einstellungen werden gelesen, bevor das Fenster erscheint.
+/// </summary>
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(AppSettings))]
+[JsonSerializable(typeof(ReleaseInfo))]
+[JsonSerializable(typeof(SetupSnapshot))]
+internal sealed partial class CoreJsonContext : JsonSerializerContext;

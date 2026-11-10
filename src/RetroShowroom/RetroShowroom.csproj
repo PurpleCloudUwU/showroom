@@ -18,7 +18,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Version>1.0.0</Version>
+    <!-- Für ein Update: Version erhöhen, veröffentlichen und die .exe an ein GitHub-Release mit dem Tag v<Version> hängen -->
+    <Version>1.1.0</Version>
+    <!-- Eigener Einstiegspunkt in Program.cs (die .exe kann auch als Installer für ein Update laufen) -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <Product>Retro Showroom</Product>
     <Company>Retro Studios</Company>
     <DefaultLanguage>de-DE</DefaultLanguage>
@@ -69,7 +72,17 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
+    <!--
+      Nur die Teile des Windows App SDK, die die App braucht. Das Sammelpaket „Microsoft.WindowsAppSDK“ bringt
+      zusätzlich KI-, Such- und Widget-Bibliotheken mit (onnxruntime, DirectML …, zusammen rund 55 MB entpackt),
+      die hier niemand verwendet. Ohne sie ist die .exe kleiner: schnellerer Download und schnellerer erster Start.
+    -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.5" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.6.5" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.6.5" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.6.5" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.6.5" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.6.5" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
   </ItemGroup>
 
